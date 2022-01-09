@@ -1,14 +1,15 @@
-//const link = 'http://api.weatherstack.com/current?access_key=8bb7cfca85c614597d04d956020160a5';
+const link = 'http://api.weatherstack.com/current?access_key=8bb7cfca85c614597d04d956020160a5';
 
 const root = document.getElementById('root');
 const popup = document.getElementById('popup');
 const textInput = document.getElementById('text-input');
 const form = document.getElementById('form');
+const closePopup = document.getElementById('close');
 // переименовать объект store и посмотреть как будет работать 
-// тут значения по умолчанию
+
+// значения по умолчанию
 let store = {
-  city: 'London',
-  feelslike: 0,
+  city: 'Saratov',
   temperature: 0,
   observationTime: '00:00',
   isDay: 'yes',
@@ -24,66 +25,72 @@ let store = {
 }
 
 const fetchData = async () => {
-  const result = await fetch(`${link}&query=${store.city}`);
-  const data = await result.json();
-  console.log(data);
-  const {
-    current: {
-      cloudcover,
-      feelslike,
-      humidity,
-      temperature,
-      observation_time: observationTime,
-      pressure,
-      uv_index: uvIndex,
-      visibility,
-      is_day: isDay,
-      weather_descriptions: weatherDescriptions,
-      wind_speed: windSpeed
-    }
-  } = data;
+  try {
+    const query = localStorage.getItem('query') || store.city;
+    const result = await fetch(`${link}&query=${query}`);
+    const data = await result.json();
+    const {
+      current: {
+        cloudcover,
+        humidity,
+        temperature,
+        observation_time: observationTime,
+        pressure,
+        uv_index: uvIndex,
+        visibility,
+        is_day: isDay,
+        weather_descriptions: weatherDescriptions,
+        wind_speed: windSpeed
+      },
+      location: {
+        name
+      },
+    } = data;
 
-  store = {
-    ...store,
-    feelslike,
-    temperature,
-    observationTime,
-    isDay,
-    weatherDescriptions: weatherDescriptions[0],
-    properties: {
-      cloudcover: {
-        title: 'cloudcover',
-        value: `${cloudcover}%`,
-        icon: 'cloud.png'
-      },
-      humidity: {
-        title: 'humidity',
-        value: `${humidity}%`,
-        icon: 'humidity.png'
-      },
-      windSpeed: {
-        title: 'wind speed',
-        value: `${windSpeed} km/h`,
-        icon: 'wind.png'
-      },
-      visibility: {
-        title: 'visibility',
-        value: `${visibility}%`,
-        icon: 'visibility.png'
-      },
-      uvIndex: {
-        title: 'uv index',
-        value: uvIndex,
-        icon: 'uv-index.png'
-      },
-      pressure: {
-        title: 'pressure',
-        value: `${pressure} mmHg`,
-        icon: 'gauge.png',
+    store = {
+      ...store,
+      city: name,
+      temperature,
+      observationTime,
+      isDay,
+      weatherDescriptions: weatherDescriptions[0],
+      properties: {
+        cloudcover: {
+          title: 'cloudcover',
+          value: `${cloudcover}%`,
+          icon: 'cloud.png'
+        },
+        humidity: {
+          title: 'humidity',
+          value: `${humidity}%`,
+          icon: 'humidity.png'
+        },
+        windSpeed: {
+          title: 'wind speed',
+          value: `${windSpeed} km/h`,
+          icon: 'wind.png'
+        },
+        visibility: {
+          title: 'visibility',
+          value: `${visibility}%`,
+          icon: 'visibility.png'
+        },
+        uvIndex: {
+          title: 'uv index',
+          value: uvIndex,
+          icon: 'uv-index.png'
+        },
+        pressure: {
+          title: 'pressure',
+          value: `${pressure} mmHg`,
+          icon: 'gauge.png',
+        }
       }
-    }
+    };
+    renderComponent();
+  } catch (err) {
+    console.log(err);
   };
-  renderComponent();
 };
 
 const getImage = (description) => {
@@ -106,7 +113,7 @@ const getImage = (description) => {
 };
 
 const renderProperty = (properties) => {
-  return Object.values(properties).map(({title,value,icon}) => {
+  return Object.values(properties).map(({ title, value, icon }) => {
     return `<div class="property">
     <div class="property-icon">
       <img src="./img/icons/${icon}" alt="">
@@ -162,7 +169,7 @@ const renderComponent = () => {
   root.innerHTML = markup();
 
   const city = document.getElementById('city');
-  city.addEventListener('click',togglePopupClass);
+  city.addEventListener('click', togglePopupClass);
 };
 
 const handleInput = (event) => {
@@ -170,17 +177,20 @@ const handleInput = (event) => {
     ...store,
     city: event.target.value
   };
-  console.log(event.target.value);
 };
 
 const handleSubmit = (event) => {
   event.preventDefault();
-    fetchData();
-    togglePopupClass();
+  const value = store.city;
+  if (!value) return null;
+
+  localStorage.setItem('query',value);
+  fetchData();
+  togglePopupClass();
 };
 
 form.addEventListener('submit', handleSubmit);
 textInput.addEventListener('input', handleInput);
-
+closePopup.addEventListener('click', togglePopupClass);
 fetchData();
 
